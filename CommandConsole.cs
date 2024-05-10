@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 using vault_thing;
 using System.Diagnostics.Eventing.Reader;
 
-namespace TestLocalLLM;
+namespace vault_thing;
 
 public class CommandConsole()
 {
@@ -18,19 +18,23 @@ public class CommandConsole()
     {
         string[] args = command.Split(' ');
 
-        return args[0] switch
-        {
-            "echo" => Echo(args[1..]),
-            "login" => Login(args[1]),
-            "help" => HelpCommand(args[1..]),
-            "cd" => ChangeDirectory(args[1..]),
-            "ls" => ListFiles(args[1..]),
-            "mk" => MakeFile(args[1], args[2]),
-            "globulate" => MoveFileToGlob(args[1], args[2]),
-            "extract" => ExtractFromGlob(args[1], args[2]),
-            "view" => ViewGlobContents(args[1]),
-            _ => CommandNotFoundError(args[0])
-        };
+        try {
+            return args[0] switch
+            {
+                "echo" => Echo(args[1..]),
+                "login" => Login(args[1]),
+                "help" => HelpCommand(args[1..]),
+                "cd" => ChangeDirectory(args[1..]),
+                "ls" => ListFiles(args[1..]),
+                "mk" => MakeFile(args[1], args[2]),
+                "globulate" => MoveFileToGlob(args[1], args[2]),
+                "extract" => ExtractFromGlob(args[1], args[2]),
+                "view" => ViewGlobContents(args[1]),
+                _ => CommandNotFoundError(args[0])
+            };
+        } catch (IndexOutOfRangeException) {
+            return ("There was an error processing the given arguments.", Color.Red);
+        }
     }
 
     private static (string, Color) HelpCommand(string[] command)
@@ -68,9 +72,11 @@ public class CommandConsole()
 
     private (string, Color) ViewGlobContents(string glob)
     {
-        if (File.Exists(CurrentDirectory + '\\' + glob))
+        string globPath = ParseDirectoryRequest(glob);
+
+        if (File.Exists(globPath))
         {
-            string json = File.ReadAllText(CurrentDirectory + '\\' + glob);
+            string json = File.ReadAllText(globPath);
 
             // get all files in selected .glob file
             List<FileWrapper> files = JsonConvert.DeserializeObject<List<FileWrapper>>(json);
@@ -88,9 +94,11 @@ public class CommandConsole()
 
     private (string, Color) ExtractFromGlob(string fileName, string glob)
     {
-        if (File.Exists(CurrentDirectory + '\\' + glob))
+        string globPath = ParseDirectoryRequest(glob);
+
+        if (File.Exists(globPath))
         {
-            string json = File.ReadAllText(CurrentDirectory + '\\' + glob);
+            string json = File.ReadAllText(globPath);
 
             // get all files in selected .glob file
             List<FileWrapper> files = JsonConvert.DeserializeObject<List<FileWrapper>>(json);
@@ -100,11 +108,11 @@ public class CommandConsole()
             if (file is null)
                 return ($"File '{fileName}' does not exist in glob '{glob}'!", Color.Red);
 
-            File.WriteAllBytes(CurrentDirectory + '\\' + file.FileName, file.Bytes);
+            File.WriteAllBytes(CurrentDirectory + '\\' + fileName, file.Bytes);
 
             files.Remove(file);
             json = JsonConvert.SerializeObject(files, Formatting.Indented);
-            File.WriteAllText(CurrentDirectory + '\\' + glob, json);
+            File.WriteAllText(globPath, json);
 
             return ($"Extracted '{file.FileName}' from glob '{glob}'.", Color.Green);
         }
@@ -114,20 +122,23 @@ public class CommandConsole()
 
     private (string, Color) MoveFileToGlob(string fileName, string glob)
     {
-        if (File.Exists(CurrentDirectory + '\\' + fileName) && File.Exists(CurrentDirectory + '\\' + glob))
+        string? globPath = ParseDirectoryRequest(glob);
+        string? filePath = ParseDirectoryRequest(fileName);
+
+        if (File.Exists(filePath) && File.Exists(globPath))
         {
-            string json = File.ReadAllText(CurrentDirectory + '\\' + glob);
+            string json = File.ReadAllText(globPath);
 
             // get all files in selected .glob file
             List<FileWrapper> files = JsonConvert.DeserializeObject<List<FileWrapper>>(json);
 
-            FileWrapper file = new(fileName, File.ReadAllBytes(CurrentDirectory + '\\' + fileName));
+            FileWrapper file = new(fileName, File.ReadAllBytes(filePath));
 
             files.Add(file);
 
             json = JsonConvert.SerializeObject(files, Formatting.Indented);
-            File.WriteAllText(CurrentDirectory + '\\' + glob, json);
-            File.Delete(CurrentDirectory + '\\' + fileName);
+            File.WriteAllText(globPath, json);
+            File.Delete(filePath);
 
             return ($"Moved file '{fileName}' to glob '{glob}'.", Color.Green);
         }
@@ -137,15 +148,18 @@ public class CommandConsole()
 
     private (string, Color) MakeFile(string type, string name)
     {
+        string? filePath = ParseDirectoryRequest(name);
+
+        if (filePath is null)
+            return ($"File '{name}' could not be created.", Color.Red);
+
         try {
             if (type == "-f")
-                File.Create(CurrentDirectory + '\\' + name).Dispose();
+                File.Create(filePath).Dispose();
             else if (type == "-d")
-                Directory.CreateDirectory(CurrentDirectory + '\\' + name);
+                Directory.CreateDirectory(filePath);
             else if (type == "-g")
-            {
-                File.WriteAllText(CurrentDirectory + '\\' + name + ".glob", "[]");
-            }
+                File.WriteAllText(filePath + ".glob", "[]");
                 
         } catch (Exception ex) {
             return ($"An error occurred whilst attempting to create file '{name}'. '{ex}'", Color.Red);
@@ -183,65 +197,69 @@ public class CommandConsole()
                 stringAllFiles += dir.Name + '\n';
 
             stringAllFiles += "\nGlobs:\n" + allGlobs;
+            return (stringAllFiles, Color.MistyRose);
         }
-        else if (type[0] == "-d")
+
+        switch(type[0])
         {
-            DirectoryInfo[] allDirs = dInfo.GetDirectories();
+            case "-d":
+                DirectoryInfo[] allDirs = dInfo.GetDirectories();
 
-            foreach (DirectoryInfo dir in allDirs)
-                stringAllFiles += dir.Name + '\n';
-        }
-        else if (type[0] == "-f")
-        {
-            FileInfo[] allFiles = dInfo.GetFiles();
+                foreach (DirectoryInfo dir in allDirs)
+                    stringAllFiles += dir.Name + '\n';
+                break;
+            case "-f":
+                FileInfo[] allFiles = dInfo.GetFiles();
 
-            foreach (FileInfo file in allFiles)
-                stringAllFiles += file.Name + '\n';
-        }
-        else if (type[0] == "-g")
-        {
-            FileInfo[] allFiles = dInfo.GetFiles();
+                foreach (FileInfo file in allFiles)
+                    stringAllFiles += file.Name + '\n';
+                break;
+            case "-g":
+                allFiles = dInfo.GetFiles();
 
-            string allGlobs = "";
+                string allGlobs = "";
 
-            foreach (FileInfo file in allFiles)
-            {
-                if (file.Name.EndsWith(".glob"))
-                    allGlobs += file.Name + '\n';
-            }
+                foreach (FileInfo file in allFiles)
+                    if (file.Name.EndsWith(".glob"))
+                        allGlobs += file.Name + '\n';
 
-            stringAllFiles += allGlobs;
-        }
-        else
-            return ($"Invalid argument '{type[0]}'.", Color.Red);
+                stringAllFiles += allGlobs;
+                break;
+            default:
+                return ($"Invalid argument '{type[0]}'.", Color.Red);
+        };
 
         return (stringAllFiles, Color.MistyRose);
+    }
+
+    private string? ParseDirectoryRequest(string requestedPath)
+    {
+        requestedPath = requestedPath.Trim();
+        string _currentDirectory = CurrentDirectory;
+
+        if (requestedPath == "^")
+            _currentDirectory = Directory.GetParent(CurrentDirectory).FullName;
+        else if (Directory.Exists(CurrentDirectory + '\\' + requestedPath) || File.Exists(CurrentDirectory + '\\' + requestedPath))
+            _currentDirectory += '\\' + requestedPath;
+        // attempt to see if the absolute path exists
+        else if (Directory.Exists(requestedPath) || File.Exists(requestedPath))
+            _currentDirectory = requestedPath;
+        else
+            return null;
+
+        return _currentDirectory;
     }
 
     private (string, Color) ChangeDirectory(string[] path)
     {
         string stringPath = string.Join(' ', path);
 
-        if (path[0] == "^")
-        {
-            CurrentDirectory = Directory.GetParent(CurrentDirectory).FullName;
-            return ($"Altered directory to '{CurrentDirectory}'.", Color.Green);
-        }
-
-        // checks to see if user is referencing a directory already within the current one
-        if (Directory.Exists(CurrentDirectory + '\\' + stringPath))
-        {
-            CurrentDirectory += '\\' + stringPath;
-            return ($"Altered directory to '{CurrentDirectory}'.", Color.Green);
-        }
-        // attempt to see if the absolute path exists
-        else if (Directory.Exists(stringPath))
-        {
-            CurrentDirectory = stringPath;
-            return ($"Altered directory to '{CurrentDirectory}'.", Color.Green);
-        }
-
-        return ($"Directory '{stringPath}' does not exist!", Color.Red);
+        string? nextDirectory = ParseDirectoryRequest(stringPath);
+        if (nextDirectory is null)
+            return ($"Directory '{stringPath}' does not exist!", Color.Red);
+       
+        CurrentDirectory = nextDirectory;
+        return ($"Changed current directory scope to '{stringPath}'.", Color.Green);   
     }
 
     private static (string, Color) CommandNotFoundError(string command)
@@ -261,7 +279,6 @@ public class CommandConsole()
     private (string, Color) Login(string password)
     {
         Password = password;
-
         return ("Login successful.", Color.Green);
     }
 }

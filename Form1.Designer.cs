@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
             consoleOutput = new RichTextBox();
             commandBox = new TextBox();
             sendButton = new Button();
@@ -38,11 +39,11 @@
             consoleOutput.BackColor = Color.FromArgb(28, 27, 34);
             consoleOutput.Font = new Font("Cascadia Code", 9F);
             consoleOutput.ForeColor = Color.MistyRose;
-            consoleOutput.Location = new Point(24, 24);
-            consoleOutput.Margin = new Padding(6);
+            consoleOutput.HideSelection = false;
+            consoleOutput.Location = new Point(12, 12);
             consoleOutput.Name = "consoleOutput";
             consoleOutput.ReadOnly = true;
-            consoleOutput.Size = new Size(2520, 1178);
+            consoleOutput.Size = new Size(1262, 591);
             consoleOutput.TabIndex = 0;
             consoleOutput.Text = "";
             consoleOutput.TextChanged += consoleOutput_TextChanged;
@@ -51,20 +52,18 @@
             // 
             commandBox.BackColor = Color.FromArgb(75, 73, 89);
             commandBox.ForeColor = Color.MistyRose;
-            commandBox.Location = new Point(24, 1220);
-            commandBox.Margin = new Padding(6);
+            commandBox.Location = new Point(12, 610);
             commandBox.Name = "commandBox";
             commandBox.PlaceholderText = "Command..";
-            commandBox.Size = new Size(2358, 39);
+            commandBox.Size = new Size(1181, 23);
             commandBox.TabIndex = 1;
             commandBox.TextChanged += commandBox_TextChanged;
             // 
             // sendButton
             // 
-            sendButton.Location = new Point(2398, 1218);
-            sendButton.Margin = new Padding(6);
+            sendButton.Location = new Point(1199, 609);
             sendButton.Name = "sendButton";
-            sendButton.Size = new Size(150, 46);
+            sendButton.Size = new Size(75, 23);
             sendButton.TabIndex = 2;
             sendButton.Text = "Send >>";
             sendButton.UseVisualStyleBackColor = true;
@@ -73,16 +72,16 @@
             // Main
             // 
             AcceptButton = sendButton;
-            AutoScaleDimensions = new SizeF(192F, 192F);
+            AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.FromArgb(43, 42, 51);
-            ClientSize = new Size(2572, 1290);
+            ClientSize = new Size(1286, 645);
             Controls.Add(sendButton);
             Controls.Add(commandBox);
             Controls.Add(consoleOutput);
-            Margin = new Padding(6);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Main";
-            Text = "Vault";
+            Text = "Globulator";
             Load += Main_Load;
             ResumeLayout(false);
             PerformLayout();
