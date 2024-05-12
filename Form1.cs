@@ -1,4 +1,5 @@
 using System.DirectoryServices;
+using WMPLib;
 
 namespace vault_thing;
 
@@ -9,18 +10,32 @@ public partial class Main : Form
         InitializeComponent();
     }
     CommandConsole console;
+
+    private void PlayTimeCircuitsSFX()
+    {
+        WindowsMediaPlayer player = new()
+        {
+            URL = "time_circuits.mp3"
+        };
+        player.controls.play();
+    }
+
     private void Main_Load(object sender, EventArgs e)
     {
         console = new();
         consoleOutput.AppendText($"{DateTime.Now:HH:mm:ss}; ", Color.Magenta); 
         consoleOutput.AppendText($"{console.CurrentDirectory}; ", Color.Yellow);
+        consoleOutput.AppendText($"{console.CurrentGlobName}; ", Color.Orange);
         consoleOutput.AppendText(">> Program booted..\n", Color.Green);
+
+        PlayTimeCircuitsSFX();
     }
 
     private void button1_Click(object sender, EventArgs e)
     {
         consoleOutput.AppendText($"{DateTime.Now:HH:mm:ss}; ", Color.Magenta);
         consoleOutput.AppendText($"{console.CurrentDirectory}; ", Color.Yellow);
+        consoleOutput.AppendText($"{console.CurrentGlobName}; ", Color.Orange);
         consoleOutput.AppendText($"<< {commandBox.Text}", Color.Cyan);
         (string, Color) response = console.ProcessCommand(commandBox.Text);
         commandBox.Clear();
@@ -30,6 +45,7 @@ public partial class Main : Form
 
         consoleOutput.AppendText($"\n{DateTime.Now:HH:mm:ss}; ", Color.Magenta);
         consoleOutput.AppendText($"{console.CurrentDirectory}; ", Color.Yellow);
+        consoleOutput.AppendText($"{console.CurrentGlobName}; ", Color.Orange);
         consoleOutput.AppendText($">> {responseText}\n", responseColour);
     }
 
