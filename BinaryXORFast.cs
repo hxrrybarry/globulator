@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace vault_thing;
+﻿namespace vault_thing;
 
 // nicked this from https://www.codeproject.com/articles/328740/binary-operations-on-byte-arrays-with-parallelism
 

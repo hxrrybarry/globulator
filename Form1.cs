@@ -2,6 +2,7 @@ using System.DirectoryServices;
 using System.Runtime.CompilerServices;
 using System.Drawing;
 using WMPLib;
+using System.Drawing.Imaging;
 
 namespace vault_thing;
 
@@ -35,6 +36,7 @@ public partial class Main : Form
         recPathLabel = new Rectangle(viewedFilePath.Location, viewedFilePath.Size);
 
         commandBox.Multiline = true;
+        this.SetStyle(ControlStyles.SupportsTransparentBackColor, true);
     }
 
     private void Main_Resiz(object sender, EventArgs e)

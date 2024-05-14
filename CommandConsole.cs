@@ -1,27 +1,17 @@
 ﻿using System.Text;
-using System.Net.NetworkInformation;
-using System.DirectoryServices;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.IO.Compression;
 using Newtonsoft.Json;
-using vault_thing;
-using System.Diagnostics.Eventing.Reader;
-using System.Buffers.Text;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using WMPLib;
 using Newtonsoft.Json.Linq;
-using static System.Formats.Asn1.AsnWriter;
-using System.Linq.Expressions;
+using System.Drawing.Imaging;
 
 namespace vault_thing;
 
 public class CommandConsole()
 {
-    private const string VERSION = "b1.0.0";
+    private const string VERSION = "b1.0.1";
 
-    static JObject json = JObject.Parse(File.ReadAllText("config.json"));
+    readonly static JObject json = JObject.Parse(File.ReadAllText("config.json"));
 
     private string Password = "";
     public string CurrentDirectory = json.Value<string>("defaultdir");
@@ -225,6 +215,8 @@ public class CommandConsole()
         return ($"Error! Glob '{stringGlob}' does not exist!", Color.Red);
     }
     
+    
+
     private void ExtractSingleFile(FileWrapper file, string isCopy, string globPath)
     {
         // create a new file containing the decompressed byte data of file.Bytes and write
@@ -284,10 +276,10 @@ public class CommandConsole()
             }
             
             else
-            {
-                // we have to define an amount here and do a manual loop because CurrentGlobContents.Count may change as files are extracted
+            {               
                 if (isCopy == "-m")
                 {
+                    // we have to define an amount here and do a manual loop because CurrentGlobContents.Count may change as files are extracted
                     int count = CurrentGlobContents.Count;
                     for (int _ = 0; _ < count; _++)
                         ExtractSingleFile(CurrentGlobContents[0], isCopy, globPath);
@@ -509,20 +501,13 @@ public class CommandConsole()
 
     private string? ParseDirectoryRequest(string requestedPath)
     {
-        string _currentDirectory = CurrentDirectory;
-
-        // '^' indicates user is requesting to go to parent directory
         if (requestedPath == "^")
-            _currentDirectory = Directory.GetParent(CurrentDirectory).FullName;
-        else if (Directory.Exists(CurrentDirectory + '\\' + requestedPath) || File.Exists(CurrentDirectory + '\\' + requestedPath))
-            _currentDirectory += '\\' + requestedPath;
-        // attempt to see if the absolute path exists
-        else if (Directory.Exists(requestedPath) || File.Exists(requestedPath))
-            _currentDirectory = requestedPath;
-        else
-            return null;
+            return Directory.GetParent(CurrentDirectory).FullName;
 
-        return _currentDirectory;
+        string potentialLocalDirectoryPath = CurrentDirectory + '\\' + requestedPath;
+
+        return FileWrapper.FileOrDirectoryExists(potentialLocalDirectoryPath) ? potentialLocalDirectoryPath :
+               FileWrapper.FileOrDirectoryExists(requestedPath) ? requestedPath : null;
     }
 
     private (string, Color) ChangeDirectory(string[] path)
